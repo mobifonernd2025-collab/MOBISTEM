@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MobiSTEM-MobiFone</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/monokai.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
+
+    <script src="https://unpkg.com/blockly/blockly_compressed.js"></script>
+    <script src="https://unpkg.com/blockly/blocks_compressed.js"></script>
+    <script src="https://unpkg.com/blockly/python_compressed.js"></script>
+    <script src="https://unpkg.com/blockly/msg/vi.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <header>
+        <div class="tab-buttons">
+            <button class="tab-btn active" onclick="switchTab('tab-blockly', this)">🧩 Lập trình Scratch</button>
+            <button class="tab-btn" onclick="switchTab('tab-mqtt', this)">⚙️ Cấu hình Kết Nối</button>
+        </div>
+        <div class="action-buttons">
+            <input type="file" id="fileInput" style="display: none;" accept=".mobistem,.xml"
+                onchange="loadProject(event)">
+
+            <button class="btn-file" onclick="document.getElementById('fileInput').click()">📂 MỞ BÀI</button>
+            <button class="btn-file" onclick="saveProject()">💾 LƯU BÀI</button>
+
+            <button class="btn-toggle" onclick="toggleCodePanel()">👁️ ẨN/HIỆN CODE</button>
+            <button class="btn-stop" onclick="sendStopCommand()">🛑 NGẮT CODE</button>
+            <button class="btn-upload" onclick="sendData()">🚀 NẠP CODE</button>
+        </div>
+    </header>
+
+    <div id="tab-blockly" class="tab-content active">
+        <div id="blocklyArea">
+            <div id="blocklyDiv"></div>
+        </div>
+        <div id="codeArea">
+            <div id="codeHeader"><span>🐍 Mã Python</span></div>
+            <textarea id="pythonCode"></textarea>
+        </div>
+    </div>
+
+    <div id="tab-mqtt" class="tab-content">
+        <div class="mqtt-container">
+            <h2>🌐 Cấu hình Broker MQTT</h2>
+            <div class="config-grid">
+                <div class="form-group"><label>Broker Address</label><input type="text" id="host"
+                        value="098ab8ccb8b94044944a7052721958b2.s1.eu.hivemq.cloud"></div>
+                <div class="form-group"><label>Port (WebSocket SSL)</label><input type="number" id="port" value="8884">
+                </div>
+                <div class="form-group"><label>Username</label><input type="text" id="user" value="MobiSTEM"></div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <div class="pass-wrapper"><input type="password" id="pass" value="Stem@123"><span
+                            class="toggle-pass" onclick="togglePassword()">HIỆN</span></div>
+                </div>
+                <div class="form-group"><label>Topic Publish</label><input type="text" id="topic" value="Ras"></div>
+                <div class="form-group"><label>JSON Key</label><input type="text" id="jsonKey" value="main"></div>
+            </div>
+            <div class="connect-bar">
+                <button class="btn-connect" id="connectBtn" onclick="connectMQTT()">KẾT NỐI BROKER</button>
+                <div id="status" class="status-box">Trạng thái: Chưa kết nối</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="matrix-modal-overlay" id="matrixOverlay">
+        <div class="matrix-modal">
+            <h3>🎨 Vẽ Icon Ma Trận 8x8</h3>
+            <div class="led-grid" id="ledGrid"></div>
+            <div class="matrix-hex-preview" id="matrixHexPreview">[0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00]</div>
+            <div class="matrix-actions">
+                <button class="btn-clear-matrix" onclick="clearMatrix()">Xóa Trắng</button>
+                <button class="btn-cancel-matrix" onclick="closeMatrixEditor()">Hủy</button>
+                <button class="btn-save-matrix" onclick="saveMatrixEditor()">Lưu Icon</button>
+            </div>
+        </div>
+    </div>
+
+    <xml id="toolbox" style="display: none">
+
+        <category name="🔀 LOGIC" colour="#5C81A6">
+            <block type="controls_if"></block>
+            <block type="controls_if">
+                <mutation else="1"></mutation>
+            </block>
+            <block type="logic_compare"></block>
+            <block type="logic_operation"></block>
+            <block type="logic_negate"></block>
+            <block type="logic_boolean"></block>
+        </category>
+
+        <category name="🔁 VÒNG LẶP" colour="#5ba55b">
+            <block type="main_loop"></block>
+            <block type="time_delay">
+                <value name="TIME">
+                    <shadow type="math_number">
+                        <field name="NUM">1</field>
+                    </shadow>
+                </value>
+            </block>
+            <block type="controls_repeat_ext">
+                <value name="TIMES">
+                    <shadow type="math_number">
+                        <field name="NUM">10</field>
+                    </shadow>
+                </value>
+            </block>
+            <block type="controls_whileUntil"></block>
+            <block type="controls_for">
+                <value name="FROM">
+                    <shadow type="math_number">
+                        <field name="NUM">1</field>
+                    </shadow>
+                </value>
+                <value name="TO">
+                    <shadow type="math_number">
+                        <field name="NUM">10</field>
+                    </shadow>
+                </value>
+                <value name="BY">
+                    <shadow type="math_number">
+                        <field name="NUM">1</field>
+                    </shadow>
+                </value>
+            </block>
+            <block type="controls_forEach"></block>
+            <block type="controls_flow_statements"></block>
+        </category>
+
+        <category name="➕ TOÁN HỌC" colour="#5C68A6">
+            <block type="math_number">
+                <field name="NUM">0</field>
+            </block>
+            <block type="math_arithmetic">
+                <value name="A">
+                    <shadow type="math_number">
+                        <field name="NUM">1</field>
+                    </shadow>
+                </value>
+                <value name="B">
+                    <shadow type="math_number">
+                        <field name="NUM">1</field>
+                    </shadow>
+                </value>
+            </block>
+            <block type="math_single"></block>
+            <block type="math_trig"></block>
+            <block type="math_round"></block>
+            <block type="math_modulo">
+                <value name="DIVIDEND">
+                    <shadow type="math_number">
+                        <field name="NUM">64</field>
+                    </shadow>
+                </value>
+                <value name="DIVISOR">
+                    <shadow type="math_number">
+                        <field name="NUM">10</field>
+                    </shadow>
+                </value>
+            </block>
+            <block type="math_random_int">
+                <value name="FROM">
+                    <shadow type="math_number">
+                        <field name="NUM">1</field>
+                    </shadow>
+                </value>
+                <value name="TO">
+                    <shadow type="math_number">
+                        <field name="NUM">100</field>
+                    </shadow>
+                </value>
+            </block>
+        </category>
+
+        <category name="📝 VĂN BẢN" colour="#5CA68D">
+            <block type="text"></block>
+            <block type="text_join"></block>
+            <block type="text_length"></block>
+        </category>
+
+        <category name="🗂️ BIẾN" colour="#A65C81" custom="VARIABLE"></category>
+
+        <category name="🛠️ HÀM" colour="#9A5CA6" custom="PROCEDURE"></category>
+
+        <sep gap="30"></sep>
+
+        <category name="🎮 TAY CẦM" colour="#4C97FF">
+            <block type="gamepad_init"></block>
+            <block type="gamepad_pressed"></block>
+            <block type="gamepad_held"></block>
+            <block type="gamepad_analog"></block>
+        </category>
+        <category name="🚗 ĐỘNG CƠ" colour="#0FBD8C">
+            <block type="motor_gamepad"></block>
+            <block type="motor_straight">
+                <value name="DIST">
+                    <shadow type="math_number">
+                        <field name="NUM">50</field>
+                    </shadow>
+                </value>
+                <value name="SPEED">
+                    <shadow type="math_number">
+                        <field name="NUM">0.4</field>
+                    </shadow>
+                </value>
+            </block>
+            <block type="motor_basic">
+                <value name="SPEED">
+                    <shadow type="math_number">
+                        <field name="NUM">0.4</field>
+                    </shadow>
+                </value>
+            </block>
+            <block type="motor_stop"></block>
+        </category>
+        <category name="🦾 TAY GẮP (SERVO)" colour="#FF6680">
+            <block type="servo_move">
+                <value name="STEP">
+                    <shadow type="math_number">
+                        <field name="NUM">1.5</field>
+                    </shadow>
+                </value>
+            </block>
+            <block type="servo_set">
+                <value name="ANGLE">
+                    <shadow type="math_number">
+                        <field name="NUM">0</field>
+                    </shadow>
+                </value>
+            </block>
+            <block type="servo_cleanup"></block>
+        </category>
+        <category name="💡 HIỂN THỊ" colour="#9966FF">
+            <block type="led7_show">
+                <value name="NUM">
+                    <shadow type="math_number">
+                        <field name="NUM">1234</field>
+                    </shadow>
+                </value>
+            </block>
+            <block type="matrix_scroll">
+                <value name="TEXT">
+                    <shadow type="text">
+                        <field name="TEXT">WARNING!</field>
+                    </shadow>
+                </value>
+                <value name="SPEED">
+                    <shadow type="math_number">
+                        <field name="NUM">0.02</field>
+                    </shadow>
+                </value>
+            </block>
+            <block type="matrix_icon_custom">
+                <value name="X">
+                    <shadow type="math_number">
+                        <field name="NUM">5</field>
+                    </shadow>
+                </value>
+                <value name="Y">
+                    <shadow type="math_number">
+                        <field name="NUM">0</field>
+                    </shadow>
+                </value>
+            </block>
+            <block type="led_cleanup"></block>
+        </category>
+        <category name="🎵 ÂM THANH" colour="#D65CD6">
+            <block type="sound_play">
+                <value name="TRACK">
+                    <shadow type="math_number">
+                        <field name="NUM">1</field>
+                    </shadow>
+                </value>
+            </block>
+            <block type="sound_vol">
+                <value name="VOL">
+                    <shadow type="math_number">
+                        <field name="NUM">10</field>
+                    </shadow>
+                </value>
+            </block>
+            <block type="sound_stop"></block>
+        </category>
+        <category name="📡 CẢM BIẾN" colour="#5CB1D6">
+            <block type="sensor_dist"></block>
+            <block type="sensor_line"></block>
+        </category>
+    </xml>
+
+    <script src="blocks.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
