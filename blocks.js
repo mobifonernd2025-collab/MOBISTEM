@@ -40,7 +40,20 @@ Blockly.Blocks['sound_stop'] = { init: function () { this.appendDummyInput().app
 
 Blockly.Blocks['sensor_dist'] = { init: function () { this.appendDummyInput().appendField("📡 Khoảng cách siêu âm (cm)"); this.setOutput(true, "Number"); this.setColour("#5CB1D6"); } };
 Blockly.Blocks['sensor_line'] = { init: function () { this.appendDummyInput().appendField("📡 Đọc mắt dò Line").appendField(new Blockly.FieldDropdown([["Mắt 0", "0"], ["Mắt 1", "1"], ["Mắt 2", "2"], ["Mắt 3", "3"]]), "IDX"); this.setOutput(true, "Number"); this.setColour("#5CB1D6"); } };
-
+Blockly.Blocks['convert_tostring'] = {
+    init: function () {
+        this.appendValueInput("VAL").appendField("🔤 Chuyển thành Chữ");
+        this.setOutput(true, "String");
+        this.setColour("#5CA68D"); // Trùng màu với mục Văn bản
+    }
+};
+Blockly.Blocks['convert_tonumber'] = {
+    init: function () {
+        this.appendValueInput("VAL").appendField("🔢 Chuyển thành Số");
+        this.setOutput(true, "Number");
+        this.setColour("#5C68A6"); // Trùng màu với mục Toán học
+    }
+};
 
 // ==========================================
 // 2. DỊCH MÃ PYTHON (PYTHON GENERATORS)
@@ -123,3 +136,11 @@ pyGen.forBlock['sound_stop'] = function () { return 'sound.stop_music()\n'; };
 
 pyGen.forBlock['sensor_dist'] = function () { return ['sensor.distance()', pyGen.ORDER_ATOMIC]; };
 pyGen.forBlock['sensor_line'] = function (block) { let idx = block.getFieldValue('IDX'); return [`sensor.line_data()[${idx}]`, pyGen.ORDER_ATOMIC]; };
+pyGen.forBlock['convert_tostring'] = function (block, generator) {
+    let val = generator.valueToCode(block, 'VAL', pyGen.ORDER_NONE) || '0';
+    return [`str(${val})`, pyGen.ORDER_FUNCTION_CALL];
+};
+pyGen.forBlock['convert_tonumber'] = function (block, generator) {
+    let val = generator.valueToCode(block, 'VAL', pyGen.ORDER_NONE) || '""';
+    return [`float(${val})`, pyGen.ORDER_FUNCTION_CALL]; // Dùng float để hỗ trợ cả số thập phân
+};
