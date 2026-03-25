@@ -1,10 +1,34 @@
 // ==========================================
 // 1. KHỞI TẠO BLOCKLY & CODEMIRROR
 // ==========================================
+const mobiStemTheme = Blockly.Theme.defineTheme('mobiStemTheme', {
+  'base': Blockly.Themes.Classic,
+  'componentStyles': {
+    'workspaceBackgroundColour': '#1a1d2c', /* Màu nền khu vực kéo thả (Dark Indigo) */
+    'toolboxBackgroundColour': '#232838',   /* Màu nền thanh menu bên trái */
+    'toolboxForegroundColour': '#ffffff',   /* Màu chữ thanh menu (Trắng) */
+    'flyoutBackgroundColour': '#2a3043',    /* Màu nền khung chứa khối lệnh (Pop-up) */
+    'flyoutForegroundColour': '#ffffff',
+    'flyoutOpacity': 0.95,
+    'scrollbarColour': '#00c897',           /* Thanh cuộn màu xanh ngọc */
+    'scrollbarOpacity': 0.5,
+  }
+});
+
 const workspace = Blockly.inject('blocklyDiv', {
-    toolbox: document.getElementById('toolbox'),
-    grid: { spacing: 20, length: 3, colour: '#ccc', snap: true },
-    trashcan: true, zoom: { controls: true, wheel: true }
+  toolbox: document.getElementById('toolbox'),
+  theme: mobiStemTheme,
+  grid: { spacing: 20, length: 3, colour: '#3e4451', snap: true },
+  trashcan: true,
+  zoom: {
+    controls: true,
+    wheel: true,
+    startScale: 1.18,
+    maxScale: 2.5,
+    minScale: 0.7,
+    scaleSpeed: 1.1,
+    pinch: true
+  }
 });
 
 let client = null;
