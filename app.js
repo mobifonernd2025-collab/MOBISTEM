@@ -1,33 +1,27 @@
 // ==========================================
-// 1. KHỞI TẠO BLOCKLY & CODEMIRROR
+// 1. KHỞI TẠO BLOCKLY & CODEMIRROR (LIGHT THEME)
 // ==========================================
 const mobiStemTheme = Blockly.Theme.defineTheme('mobiStemTheme', {
   'base': Blockly.Themes.Classic,
   'componentStyles': {
-    'workspaceBackgroundColour': '#1a1d2c', /* Màu nền khu vực kéo thả (Dark Indigo) */
-    'toolboxBackgroundColour': '#232838',   /* Màu nền thanh menu bên trái */
-    'toolboxForegroundColour': '#ffffff',   /* Màu chữ thanh menu (Trắng) */
-    'flyoutBackgroundColour': '#2a3043',    /* Màu nền khung chứa khối lệnh (Pop-up) */
-    'flyoutForegroundColour': '#ffffff',
+    'workspaceBackgroundColour': '#ffffff', /* Màu nền khu vực kéo thả (Trắng) */
+    'toolboxBackgroundColour': '#f8fafc',   /* Màu nền thanh menu bên trái */
+    'toolboxForegroundColour': '#334155',   /* Màu chữ thanh menu (Xám đậm) */
+    'flyoutBackgroundColour': '#f1f5f9',    /* Màu nền khung chứa khối lệnh (Pop-up) */
+    'flyoutForegroundColour': '#1e293b',
     'flyoutOpacity': 0.95,
-    'scrollbarColour': '#00c897',           /* Thanh cuộn màu xanh ngọc */
-    'scrollbarOpacity': 0.5,
+    'scrollbarColour': '#cbd5e1',           /* Thanh cuộn màu xám bạc */
+    'scrollbarOpacity': 0.8,
   }
 });
 
 const workspace = Blockly.inject('blocklyDiv', {
   toolbox: document.getElementById('toolbox'),
   theme: mobiStemTheme,
-  grid: { spacing: 20, length: 3, colour: '#3e4451', snap: true },
+  grid: { spacing: 20, length: 3, colour: '#e2e8f0', snap: true }, // Dấu chấm lưới màu xám nhạt
   trashcan: true,
   zoom: {
-    controls: true,
-    wheel: true,
-    startScale: 1.18,
-    maxScale: 2.5,
-    minScale: 0.7,
-    scaleSpeed: 1.1,
-    pinch: true
+    controls: true, wheel: true, startScale: 1.18, maxScale: 2.5, minScale: 0.7, scaleSpeed: 1.1, pinch: true
   }
 });
 
@@ -35,13 +29,14 @@ let client = null;
 let codeEditor = null;
 
 window.onload = function () {
+    // Chuyển theme của CodeMirror từ "monokai" (tối) sang "default" (sáng)
     codeEditor = CodeMirror.fromTextArea(document.getElementById('pythonCode'), {
-        mode: "python", theme: "monokai", lineNumbers: true, indentUnit: 4
+        mode: "python", theme: "default", lineNumbers: true, indentUnit: 4
     });
 
     workspace.addChangeListener(function (e) {
         if (e.isUiEvent) return;
-        let code = pyGen.workspaceToCode(workspace); // Gọi từ file blocks.js
+        let code = pyGen.workspaceToCode(workspace); 
         if (codeEditor) codeEditor.setValue(code);
     });
 };
