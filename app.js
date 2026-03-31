@@ -2,27 +2,49 @@
 // 1. KHỞI TẠO BLOCKLY & CODEMIRROR (LIGHT THEME)
 // ==========================================
 const mobiStemTheme = Blockly.Theme.defineTheme('mobiStemTheme', {
-  'base': Blockly.Themes.Classic,
-  'componentStyles': {
-    'workspaceBackgroundColour': '#ffffff', /* Màu nền khu vực kéo thả (Trắng) */
-    'toolboxBackgroundColour': '#f8fafc',   /* Màu nền thanh menu bên trái */
-    'toolboxForegroundColour': '#334155',   /* Màu chữ thanh menu (Xám đậm) */
-    'flyoutBackgroundColour': '#f1f5f9',    /* Màu nền khung chứa khối lệnh (Pop-up) */
-    'flyoutForegroundColour': '#1e293b',
-    'flyoutOpacity': 0.95,
-    'scrollbarColour': '#cbd5e1',           /* Thanh cuộn màu xám bạc */
-    'scrollbarOpacity': 0.8,
-  }
+    'base': Blockly.Themes.Classic,
+    'componentStyles': {
+        'workspaceBackgroundColour': '#ffffff', /* Màu nền khu vực kéo thả (Trắng) */
+        'toolboxBackgroundColour': '#f8fafc',   /* Màu nền thanh menu bên trái */
+        'toolboxForegroundColour': '#334155',   /* Màu chữ thanh menu (Xám đậm) */
+        'flyoutBackgroundColour': '#f1f5f9',    /* Màu nền khung chứa khối lệnh (Pop-up) */
+        'flyoutForegroundColour': '#1e293b',
+        'flyoutOpacity': 0.95,
+        'scrollbarColour': '#cbd5e1',           /* Thanh cuộn màu xám bạc */
+        'scrollbarOpacity': 0.8,
+    }
 });
 
+function buildToolbox(deviceId) {
+    let common = document.getElementById('common_blocks').innerHTML;
+    let specific = document.getElementById('toolbox_' + deviceId).innerHTML;
+    return '<xml>' + common + '<sep gap="30"></sep>' + specific + '</xml>';
+}
+
+// HÀM CHUYỂN ĐỔI CHẾ ĐỘ
+function switchDeviceMode(mode) {
+    // Đổi style nút bấm
+    let btnRobot = document.getElementById('btn-robot');
+    let btnSmart = document.getElementById('btn-smarthome');
+
+    if (mode === 'robot') {
+        btnRobot.style.background = '#00c897'; btnRobot.style.color = 'white'; btnRobot.style.border = 'none';
+        btnSmart.style.background = 'white'; btnSmart.style.color = '#475569'; btnSmart.style.border = '1px solid #cbd5e1';
+    } else {
+        btnSmart.style.background = '#00c897'; btnSmart.style.color = 'white'; btnSmart.style.border = 'none';
+        btnRobot.style.background = 'white'; btnRobot.style.color = '#475569'; btnRobot.style.border = '1px solid #cbd5e1';
+    }
+
+    // Cập nhật Workspace
+    workspace.updateToolbox(buildToolbox(mode));
+}
+
 const workspace = Blockly.inject('blocklyDiv', {
-  toolbox: document.getElementById('toolbox'),
-  theme: mobiStemTheme,
-  grid: { spacing: 20, length: 3, colour: '#e2e8f0', snap: true }, // Dấu chấm lưới màu xám nhạt
-  trashcan: true,
-  zoom: {
-    controls: true, wheel: true, startScale: 1.18, maxScale: 2.5, minScale: 0.7, scaleSpeed: 1.1, pinch: true
-  }
+    toolbox: buildToolbox('robot'), // Thay vì document.getElementById('toolbox')
+    theme: mobiStemTheme,
+    grid: { spacing: 20, length: 3, colour: '#e2e8f0', snap: true },
+    trashcan: true,
+    zoom: { controls: true, wheel: true, startScale: 1.18, maxScale: 2.5, minScale: 0.7, scaleSpeed: 1.1, pinch: true }
 });
 
 let client = null;
@@ -36,7 +58,7 @@ window.onload = function () {
 
     workspace.addChangeListener(function (e) {
         if (e.isUiEvent) return;
-        let code = pyGen.workspaceToCode(workspace); 
+        let code = pyGen.workspaceToCode(workspace);
         if (codeEditor) codeEditor.setValue(code);
     });
 };
@@ -147,83 +169,92 @@ function sendData() {
 
 function sendStopCommand() {
     if (!client || !client.isConnected()) return alert("⚠️ Vui lòng KẾT NỐI BROKER trước!");
-    const payloadObj = {}; payloadObj[document.getElementById('jsonKey').value || "main"] = 'print("exit")';
+
+    // Sử dụng dấu backtick (`) để tạo chuỗi nhiều dòng trong JavaScript
+    const stopScript = `print("exit")`; // Mình giữ lại print("exit") để tương thích với ngắt vòng lặp (nếu có)
+
+    const payloadObj = {};
+    payloadObj[document.getElementById('jsonKey').value || "main"] = stopScript;
+
     try {
         let msg = new Paho.MQTT.Message(JSON.stringify(payloadObj));
         msg.destinationName = document.getElementById('topic').value;
-        client.send(msg); alert("🛑 Đã gửi lệnh NGẮT CODE!");
-    } catch (e) { alert("Lỗi gửi: " + e.message); }
+        client.send(msg);
+        alert("🛑 Đã gửi lệnh NGẮT CODE và dọn dẹp phần cứng!");
+    } catch (e) {
+        alert("Lỗi gửi: " + e.message);
+    }
 }
 
 function saveProject() {
-  try {
-    // 1. Hiển thị hộp thoại nhập tên dự án
-    let projectName = prompt("Vui lòng nhập tên dự án của bạn:", "Du_An_Robot");
-    
-    // Nếu người dùng bấm "Hủy" (Cancel) thì không làm gì cả
-    if (projectName === null) {
-      return; 
-    }
-    
-    // Nếu người dùng xóa trắng rồi bấm OK, tự động gán tên mặc định
-    if (projectName.trim() === "") {
-      projectName = "Du_An_Khong_Ten";
-    }
-    
-    projectName = projectName.replace(/\.mobistem$/i, ''); 
-    let fileName = projectName + ".mobistem";
+    try {
+        // 1. Hiển thị hộp thoại nhập tên dự án
+        let projectName = prompt("Vui lòng nhập tên dự án của bạn:", "Du_An_Robot");
 
-    // 2. Chuyển đổi khối thành XML
-    let xml = Blockly.Xml.workspaceToDom(workspace);
-    let xmlText = Blockly.Xml.domToText(xml);
-    
-    // 3. Tạo file và tải xuống
-    let blob = new Blob([xmlText], {type: 'text/xml'});
-    let url = URL.createObjectURL(blob);
-    
-    let a = document.createElement('a');
-    a.href = url;
-    a.download = fileName; // Sử dụng tên file người dùng vừa đặt
-    
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    alert("💾 Đã tải file [" + fileName + "] về máy thành công!");
-  } catch (e) {
-    alert("Lỗi khi lưu bài: " + e);
-  }
+        // Nếu người dùng bấm "Hủy" (Cancel) thì không làm gì cả
+        if (projectName === null) {
+            return;
+        }
+
+        // Nếu người dùng xóa trắng rồi bấm OK, tự động gán tên mặc định
+        if (projectName.trim() === "") {
+            projectName = "Du_An_Khong_Ten";
+        }
+
+        projectName = projectName.replace(/\.mobistem$/i, '');
+        let fileName = projectName + ".mobistem";
+
+        // 2. Chuyển đổi khối thành XML
+        let xml = Blockly.Xml.workspaceToDom(workspace);
+        let xmlText = Blockly.Xml.domToText(xml);
+
+        // 3. Tạo file và tải xuống
+        let blob = new Blob([xmlText], { type: 'text/xml' });
+        let url = URL.createObjectURL(blob);
+
+        let a = document.createElement('a');
+        a.href = url;
+        a.download = fileName; // Sử dụng tên file người dùng vừa đặt
+
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        alert("💾 Đã tải file [" + fileName + "] về máy thành công!");
+    } catch (e) {
+        alert("Lỗi khi lưu bài: " + e);
+    }
 }
 
 // Hàm Mở Project
 function loadProject(event) {
-  let file = event.target.files[0];
-  if (!file) return;
+    let file = event.target.files[0];
+    if (!file) return;
 
-  let reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      let xmlText = e.target.result;
-      
-      // Chuyển chuỗi văn bản thành cấu trúc XML
-      let xml = Blockly.utils.xml.textToDom(xmlText);
-      
-      // Xóa sạch bàn làm việc hiện tại
-      workspace.clear();
-      
-      // Nhúng XML vào lại bàn làm việc thành các khối kéo thả
-      Blockly.Xml.domToWorkspace(xml, workspace);
-      
-      alert("📂 Đã mở bài thành công!");
-    } catch (err) {
-      alert("⚠️ Lỗi: File không đúng định dạng của MobiSTEM!\n" + err);
-    }
-    
-    // Reset lại thẻ input file để có thể chọn lại chính file đó lần sau
-    document.getElementById('fileInput').value = "";
-  };
-  
-  // Đọc nội dung file dưới dạng Text
-  reader.readAsText(file);
+    let reader = new FileReader();
+    reader.onload = function (e) {
+        try {
+            let xmlText = e.target.result;
+
+            // Chuyển chuỗi văn bản thành cấu trúc XML
+            let xml = Blockly.utils.xml.textToDom(xmlText);
+
+            // Xóa sạch bàn làm việc hiện tại
+            workspace.clear();
+
+            // Nhúng XML vào lại bàn làm việc thành các khối kéo thả
+            Blockly.Xml.domToWorkspace(xml, workspace);
+
+            alert("📂 Đã mở bài thành công!");
+        } catch (err) {
+            alert("⚠️ Lỗi: File không đúng định dạng của MobiSTEM!\n" + err);
+        }
+
+        // Reset lại thẻ input file để có thể chọn lại chính file đó lần sau
+        document.getElementById('fileInput').value = "";
+    };
+
+    // Đọc nội dung file dưới dạng Text
+    reader.readAsText(file);
 }
