@@ -4,7 +4,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MobiSTEM IDE - Lập trình Robot Thông Minh</title>
+  <title>MobiSTEM Scratch IDE</title>
+  <link rel="icon" href="data:," />
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
@@ -32,79 +33,132 @@
 
   <header class="topbar">
     <div class="brand-wrap">
-      <div class="brand-badge">
-        <i class="fa-solid fa-robot"></i>
+      <div class="brand-logo-box">
+        <img src="mobifone-logo-cropped.png" alt="MobiFone" class="brand-logo" />
       </div>
       <div class="brand-text">
-        <h1>MobiSTEM IDE</h1>
-        <p>Lập trình robot kéo thả · Python live · MQTT deploy</p>
+        <h1>MobiSTEM</h1>
       </div>
     </div>
 
-    <div class="topbar-right">
-      <div class="header-group tab-buttons">
-        <button class="tab-btn active" onclick="switchTab('tab-blockly', this)">
-          <i class="fa-solid fa-cubes-stacked"></i>
-          <span>Lập trình khối</span>
-        </button>
-        <button class="tab-btn" onclick="switchTab('tab-mqtt', this)">
-          <i class="fa-solid fa-wifi"></i>
-          <span>Cấu hình robot</span>
-        </button>
+    <div class="device-connect-panel">
+      <button id="devicePickerButton" class="device-picker-btn" type="button" onclick="openDevicePicker()">
+        <span id="devicePickerIcon" class="device-picker-icon"><i class="fa-solid fa-robot"></i></span>
+        <span class="device-picker-copy">
+          <small>Thiết bị</small>
+          <strong id="devicePickerLabel">Robot</strong>
+        </span>
+        <i class="fa-solid fa-chevron-down device-picker-chevron"></i>
+      </button>
+
+      <div class="device-id-box">
+        <i class="fa-solid fa-fingerprint"></i>
+        <input id="deviceIdInput" type="text" maxlength="64" autocomplete="off"
+          placeholder="Nhập ID thiết bị" aria-label="ID thiết bị" />
       </div>
 
+      <button id="deviceConnectBtn" class="device-connect-btn" type="button" onclick="connectSelectedDevice()">
+        <i id="deviceConnectBtnIcon" class="fa-solid fa-link"></i>
+        <span id="deviceConnectBtnText">Kết nối thiết bị</span>
+      </button>
+    </div>
+
+    <div class="topbar-right">
       <div class="header-group action-buttons">
         <input type="file" id="fileInput" style="display:none" accept=".mobistem,.xml" onchange="loadProject(event)" />
 
-        <button class="btn-action btn-file" onclick="document.getElementById('fileInput').click()">
-          <i class="fa-solid fa-folder-open"></i>
-          <span>Mở bài</span>
-        </button>
+        <div class="file-menu-wrap">
+          <button id="fileMenuButton" class="btn-action btn-file file-menu-button" type="button"
+            aria-haspopup="true" aria-expanded="false" onclick="toggleFileMenu(event)">
+            <i class="fa-solid fa-folder"></i>
+            <span>Tệp tin</span>
+            <i class="fa-solid fa-chevron-down file-menu-chevron"></i>
+          </button>
 
-        <button class="btn-action btn-file" onclick="saveProject()">
-          <i class="fa-solid fa-floppy-disk"></i>
-          <span>Lưu bài</span>
-        </button>
+          <div id="fileMenu" class="file-menu" role="menu">
+            <button type="button" class="file-menu-item" onclick="openProject()">
+              <span class="file-menu-icon"><i class="fa-regular fa-folder-open"></i></span>
+              <span class="file-menu-copy">
+                <strong>Mở dự án</strong>
+                <small>Chọn tệp .mobistem từ máy tính</small>
+              </span>
+              <kbd>Ctrl+O</kbd>
+            </button>
+            <button type="button" class="file-menu-item" onclick="saveProject()">
+              <span class="file-menu-icon"><i class="fa-regular fa-floppy-disk"></i></span>
+              <span class="file-menu-copy">
+                <strong>Lưu dự án</strong>
+                <small>Lưu vào tệp hiện tại</small>
+              </span>
+              <kbd>Ctrl+S</kbd>
+            </button>
+            <div class="file-menu-separator"></div>
+            <button type="button" class="file-menu-item" onclick="saveProjectAs()">
+              <span class="file-menu-icon"><i class="fa-solid fa-file-export"></i></span>
+              <span class="file-menu-copy">
+                <strong>Lưu dưới dạng</strong>
+                <small>Tạo một tệp dự án mới</small>
+              </span>
+              <kbd>Ctrl+Shift+S</kbd>
+            </button>
+          </div>
+        </div>
 
-        <button class="btn-action btn-toggle" onclick="toggleCodePanel()">
+        <button class="btn-action btn-toggle" title="Ẩn hoặc hiện mã Python" onclick="toggleCodePanel()">
           <i class="fa-solid fa-code"></i>
-          <span>Ẩn / hiện code</span>
+          <span>Code</span>
         </button>
 
-        <button class="btn-action btn-stop" onclick="sendStopCommand()">
-          <i class="fa-solid fa-hand"></i>
-          <span>Ngắt code</span>
+        <button class="btn-action btn-stop" title="Dừng chương trình đang chạy" onclick="sendStopCommand()">
+          <i class="fa-solid fa-stop"></i>
+          <span>Dừng</span>
         </button>
 
-        <button class="btn-action btn-upload" onclick="sendData()">
-          <i class="fa-solid fa-rocket"></i>
+        <button class="btn-action btn-upload" title="Nạp chương trình xuống thiết bị" onclick="sendData()">
+          <i class="fa-solid fa-play"></i>
           <span>Nạp code</span>
+        </button>
+
+        <button class="btn-action btn-settings" title="Cài đặt máy chủ MQTT" onclick="openAdminLogin()">
+          <i class="fa-solid fa-gear"></i>
+          <span>Cài đặt</span>
         </button>
       </div>
     </div>
   </header>
+
+  <div class="device-statusbar">
+    <div class="status-segment">
+      <span class="status-segment-icon"><i id="selectedDeviceIcon" class="fa-solid fa-robot"></i></span>
+      <div>
+        <small>Thiết bị</small>
+        <strong id="selectedDeviceText">Robot · Chưa nhập ID</strong>
+      </div>
+    </div>
+    <div class="status-divider"></div>
+    <div class="status-segment">
+      <span class="status-segment-icon"><i class="fa-solid fa-plug-circle-bolt"></i></span>
+      <div>
+        <small>Kết nối</small>
+        <strong id="connectionStatusText">Chưa kết nối</strong>
+      </div>
+      <span id="connectionStatusDot" class="connection-status-dot offline"></span>
+    </div>
+  </div>
 
   <main class="main-shell">
     <section id="tab-blockly" class="tab-content active">
       <div class="workspace-shell">
         <div class="panel-titlebar">
           <div class="panel-title-left">
-            <div class="panel-icon teal"><i class="fa-solid fa-diagram-project"></i></div>
-            <div>
-              <h3>Khu vực Blockly</h3>
-              <div style="margin-top: 6px; display: flex; gap: 8px;">
-                <button id="btn-robot" onclick="switchDeviceMode('robot')"
-                  style="padding: 4px 10px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; background: #00c897; color: white;">🤖
-                  Robot</button>
-                <button id="btn-smarthome" onclick="switchDeviceMode('smarthome')"
-                  style="padding: 4px 10px; border-radius: 6px; border: 1px solid #cbd5e1; cursor: pointer; font-weight: bold; background: white; color: #475569;">🏠
-                  Smart Home</button>
-              </div>
+            <div class="panel-title-copy">
+              <h3 id="workspaceTitle">Lập trình Robot</h3>
+              <p id="workspaceSubtitle">Kéo thả khối lệnh dành riêng cho Robot</p>
             </div>
           </div>
           <div class="panel-badge">
-            <i class="fa-solid fa-bolt"></i>
-            <span>Live Builder</span>
+            <span class="panel-badge-dot"></span>
+            <span id="workspaceBadgeText">Robot Workspace</span>
           </div>
         </div>
 
@@ -130,98 +184,125 @@
       </div>
     </section>
 
-    <section id="tab-mqtt" class="tab-content">
-      <div class="settings-layout">
-        <div class="hero-card">
-          <div class="hero-content">
-            <div class="hero-chip">
-              <i class="fa-solid fa-satellite-dish"></i>
-              <span>MQTT Control Center</span>
-            </div>
-            <h2>DEMO TEST MOBIFONE</h2>
-            <p>
-              Cấu hình broker, topic publish và key JSON để nạp chương trình Python
-              xuống robot.
-            </p>
 
-            <div class="hero-stats">
-              <div class="hero-stat">
-                <strong>Blockly</strong>
-                <span>Kéo thả trực quan</span>
-              </div>
-              <div class="hero-stat">
-                <strong>Python</strong>
-                <span>Sinh mã trực tiếp</span>
-              </div>
-              <div class="hero-stat">
-                <strong>MQTT</strong>
-                <span>Nạp code nhanh</span>
-              </div>
-            </div>
-          </div>
+  </main>
+
+  <div class="device-picker-overlay" id="devicePickerOverlay">
+    <div class="device-picker-modal">
+      <div class="device-picker-head">
+        <div>
+          <span class="device-picker-eyebrow"><i class="fa-solid fa-microchip"></i> MobiSTEM Devices</span>
+          <h3>Chọn thiết bị</h3>
+          <p>Chọn loại thiết bị bạn muốn lập trình. Có thể đổi lại bất cứ lúc nào.</p>
+        </div>
+        <button class="device-picker-close" type="button" onclick="closeDevicePicker()" aria-label="Đóng">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div id="deviceCatalogList" class="device-catalog-list"></div>
+
+      <div class="device-picker-foot">
+        <i class="fa-solid fa-circle-info"></i>
+        <span>Hệ thống được thiết kế để có thể bổ sung thêm nhiều dòng Robot và Smart Home sau này.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="settings-overlay" id="adminAuthOverlay">
+    <div class="settings-modal auth-modal">
+      <div class="settings-modal-head">
+        <div>
+          <span class="settings-eyebrow"><i class="fa-solid fa-lock"></i> Khu vực quản trị</span>
+          <h3>Đăng nhập cài đặt</h3>
+          <p>Chỉ quản trị viên mới được thay đổi máy chủ MQTT.</p>
+        </div>
+        <button class="settings-close" type="button" onclick="closeAdminLogin()" aria-label="Đóng">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form class="admin-login-form" onsubmit="submitAdminLogin(event)">
+        <label for="adminUsername">Tài khoản quản trị</label>
+        <div class="settings-input-wrap">
+          <i class="fa-solid fa-user-shield"></i>
+          <input id="adminUsername" type="text" autocomplete="username" placeholder="Nhập tài khoản" />
         </div>
 
-        <div class="mqtt-container">
-          <div class="section-heading">
-            <div class="section-title-left">
-              <div class="panel-icon purple"><i class="fa-solid fa-gear"></i></div>
-              <div>
-                <h2>Cấu hình Broker MQTT</h2>
-                <p>Thiết lập thông số kết nối và triển khai code xuống robot</p>
-              </div>
-            </div>
-          </div>
+        <label for="adminPassword">Mật khẩu</label>
+        <div class="settings-input-wrap">
+          <i class="fa-solid fa-key"></i>
+          <input id="adminPassword" type="password" autocomplete="current-password" placeholder="Nhập mật khẩu" />
+        </div>
 
-          <div class="config-grid">
-            <div class="form-group">
-              <label>Broker Address</label>
-              <input type="text" id="host" value="098ab8ccb8b94044944a7052721958b2.s1.eu.hivemq.cloud" />
-            </div>
+        <p id="adminLoginError" class="settings-error" hidden>Sai tài khoản hoặc mật khẩu.</p>
 
-            <div class="form-group">
-              <label>Port (WebSocket SSL)</label>
-              <input type="number" id="port" value="8884" />
-            </div>
+        <button class="settings-primary-btn" type="submit">
+          <i class="fa-solid fa-arrow-right-to-bracket"></i>
+          <span>Đăng nhập</span>
+        </button>
+      </form>
+    </div>
+  </div>
 
-            <div class="form-group">
-              <label>Username</label>
-              <input type="text" id="user" value="MobiSTEM" />
-            </div>
+  <div class="settings-overlay" id="mqttSettingsOverlay">
+    <div class="settings-modal broker-modal">
+      <div class="settings-modal-head">
+        <div>
+          <span class="settings-eyebrow"><i class="fa-solid fa-server"></i> Cấu hình hệ thống</span>
+          <h3>Máy chủ MQTT</h3>
+          <p>Thiết lập này dùng chung cho Robot và Smart Home.</p>
+        </div>
+        <button class="settings-close" type="button" onclick="closeMqttSettings()" aria-label="Đóng">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
 
-            <div class="form-group">
-              <label>Password</label>
-              <div class="pass-wrapper">
-                <input type="password" id="pass" value="Stem@123" />
-                <span class="toggle-pass" onclick="togglePassword()">HIỆN</span>
-              </div>
-            </div>
+      <div class="settings-grid">
+        <div class="settings-field wide">
+          <label for="host">Broker Address</label>
+          <input type="text" id="host" value="098ab8ccb8b94044944a7052721958b2.s1.eu.hivemq.cloud" />
+        </div>
 
-            <div class="form-group">
-              <label>Topic Publish</label>
-              <input type="text" id="topic" value="Ras" />
-            </div>
+        <div class="settings-field">
+          <label for="port">Port WebSocket SSL</label>
+          <input type="number" id="port" value="8884" />
+        </div>
 
-            <div class="form-group">
-              <label>JSON Key</label>
-              <input type="text" id="jsonKey" value="main" />
-            </div>
-          </div>
+        <div class="settings-field">
+          <label for="jsonKey">JSON Key</label>
+          <input type="text" id="jsonKey" value="main" />
+        </div>
 
-          <div class="connect-bar">
-            <button class="btn-connect" id="connectBtn" onclick="connectMQTT()">
-              <i class="fa-solid fa-plug-circle-bolt"></i>
-              <span>Kết nối broker</span>
-            </button>
+        <div class="settings-field">
+          <label for="user">MQTT Username</label>
+          <input type="text" id="user" value="MobiSTEM" />
+        </div>
 
-            <div id="status" class="status-box">
-              <i class="fa-solid fa-circle-info"></i>
-              <span>Trạng thái: Chưa kết nối</span>
-            </div>
+        <div class="settings-field">
+          <label for="pass">MQTT Password</label>
+          <div class="settings-password-wrap">
+            <input type="password" id="pass" value="Stem@123" />
+            <button type="button" class="settings-show-pass" onclick="togglePassword()">HIỆN</button>
           </div>
         </div>
       </div>
-    </section>
-  </main>
+
+      <div class="settings-note">
+        <i class="fa-solid fa-circle-info"></i>
+        <span>ID thiết bị ở màn hình chính sẽ được dùng trực tiếp làm MQTT Topic.</span>
+      </div>
+
+      <div class="settings-footer">
+        <div id="settingsSaveStatus" class="settings-save-status"></div>
+        <button class="settings-secondary-btn" type="button" onclick="closeMqttSettings()">Hủy</button>
+        <button class="settings-primary-btn compact" type="button" onclick="saveBrokerSettings()">
+          <i class="fa-solid fa-floppy-disk"></i>
+          <span>Lưu cấu hình</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <div class="matrix-modal-overlay" id="matrixOverlay">
     <div class="matrix-modal">
@@ -252,8 +333,27 @@
     </div>
   </div>
 
+  <dialog id="blocklyPromptDialog" class="blockly-prompt-dialog" aria-labelledby="blocklyPromptTitle">
+    <form id="blocklyPromptForm">
+      <div class="blockly-prompt-head">
+        <span class="blockly-prompt-icon" aria-hidden="true"><i class="fa-solid fa-tag"></i></span>
+        <div>
+          <span class="blockly-prompt-eyebrow">KHỐI LỆNH</span>
+          <h3 id="blocklyPromptTitle">Đặt tên</h3>
+        </div>
+      </div>
+      <p class="blockly-prompt-description">Chọn tên ngắn gọn, dễ nhớ để dùng trong chương trình.</p>
+      <label for="blocklyPromptInput">Tên</label>
+      <input id="blocklyPromptInput" type="text" autocomplete="off" spellcheck="false" />
+      <div class="blockly-prompt-actions">
+        <button id="blocklyPromptCancel" class="blockly-prompt-cancel" type="button">Hủy</button>
+        <button class="blockly-prompt-save" type="submit">Lưu tên</button>
+      </div>
+    </form>
+  </dialog>
+
   <xml id="common_blocks" style="display:none">
-    <category name="🔀 LOGIC" colour="#5C81A6">
+    <category name="LOGIC" colour="#5C81A6" css-row="blocklyToolboxCategory mobi-category cat-logic" css-icon="blocklyToolboxCategoryIcon mobi-category-icon fa-solid fa-code-branch">
       <block type="controls_if"></block>
       <block type="controls_if">
         <mutation else="1"></mutation>
@@ -263,7 +363,7 @@
       <block type="logic_negate"></block>
       <block type="logic_boolean"></block>
     </category>
-    <category name="🔁 VÒNG LẶP" colour="#5ba55b">
+    <category name="VÒNG LẶP" colour="#5ba55b" css-row="blocklyToolboxCategory mobi-category cat-loop" css-icon="blocklyToolboxCategoryIcon mobi-category-icon fa-solid fa-rotate">
       <block type="main_loop"></block>
       <block type="time_delay">
         <value name="TIME">
@@ -298,7 +398,7 @@
         </value>
       </block>
     </category>
-    <category name="➕ TOÁN HỌC" colour="#5C68A6">
+    <category name="TOÁN HỌC" colour="#5C68A6" css-row="blocklyToolboxCategory mobi-category cat-math" css-icon="blocklyToolboxCategoryIcon mobi-category-icon fa-solid fa-calculator">
       <block type="math_number">
         <field name="NUM">0</field>
       </block>
@@ -341,24 +441,24 @@
         </value>
       </block>
     </category>
-    <category name="📝 VĂN BẢN" colour="#5CA68D">
+    <category name="VĂN BẢN" colour="#5CA68D" css-row="blocklyToolboxCategory mobi-category cat-text" css-icon="blocklyToolboxCategoryIcon mobi-category-icon fa-solid fa-font">
       <block type="text"></block>
       <block type="text_join"></block>
       <block type="text_length"></block>
       <block type="convert_tostring"></block>
     </category>
-    <category name="🗂️ BIẾN" colour="#A65C81" custom="VARIABLE"></category>
-    <category name="🛠️ HÀM" colour="#9A5CA6" custom="PROCEDURE"></category>
+    <category name="BIẾN" colour="#A65C81" custom="VARIABLE" css-row="blocklyToolboxCategory mobi-category cat-variable" css-icon="blocklyToolboxCategoryIcon mobi-category-icon fa-solid fa-cube"></category>
+    <category name="HÀM" colour="#9A5CA6" custom="PROCEDURE" css-row="blocklyToolboxCategory mobi-category cat-function" css-icon="blocklyToolboxCategoryIcon mobi-category-icon fa-solid fa-puzzle-piece"></category>
   </xml>
 
   <xml id="toolbox_robot" style="display:none">
-    <category name="🎮 TAY CẦM" colour="#4C97FF">
+    <category name="TAY CẦM" colour="#4C97FF" css-row="blocklyToolboxCategory mobi-category cat-gamepad" css-icon="blocklyToolboxCategoryIcon mobi-category-icon fa-solid fa-gamepad">
       <block type="gamepad_init"></block>
       <block type="gamepad_pressed"></block>
       <block type="gamepad_held"></block>
       <block type="gamepad_analog"></block>
     </category>
-    <category name="🚗 ĐỘNG CƠ" colour="#0FBD8C">
+    <category name="ĐỘNG CƠ" colour="#0FBD8C" css-row="blocklyToolboxCategory mobi-category cat-motor" css-icon="blocklyToolboxCategoryIcon mobi-category-icon fa-solid fa-gears">
       <block type="motor_gamepad"></block>
       <block type="motor_straight">
         <value name="DIST">
@@ -381,7 +481,7 @@
       </block>
       <block type="motor_stop"></block>
     </category>
-    <category name="🦾 TAY GẮP (SERVO)" colour="#FF6680">
+    <category name="TAY GẮP" colour="#FF6680" css-row="blocklyToolboxCategory mobi-category cat-servo" css-icon="blocklyToolboxCategoryIcon mobi-category-icon fa-solid fa-hand">
       <block type="servo_move">
         <value name="STEP">
           <shadow type="math_number">
@@ -398,7 +498,7 @@
       </block>
       <block type="servo_cleanup"></block>
     </category>
-    <category name="💡 HIỂN THỊ" colour="#9966FF">
+    <category name="HIỂN THỊ" colour="#9966FF" css-row="blocklyToolboxCategory mobi-category cat-display" css-icon="blocklyToolboxCategoryIcon mobi-category-icon fa-solid fa-table-cells">
       <block type="led7_show">
         <value name="NUM">
           <shadow type="math_number">
@@ -432,7 +532,7 @@
       </block>
       <block type="led_cleanup"></block>
     </category>
-    <category name="🎵 ÂM THANH" colour="#D65CD6">
+    <category name="ÂM THANH" colour="#D65CD6" css-row="blocklyToolboxCategory mobi-category cat-sound" css-icon="blocklyToolboxCategoryIcon mobi-category-icon fa-solid fa-volume-high">
       <block type="sound_play">
         <value name="TRACK">
           <shadow type="math_number">
@@ -449,7 +549,7 @@
       </block>
       <block type="sound_stop"></block>
     </category>
-    <category name="📡 CẢM BIẾN" colour="#5CB1D6">
+    <category name="CẢM BIẾN" colour="#5CB1D6" css-row="blocklyToolboxCategory mobi-category cat-sensor" css-icon="blocklyToolboxCategoryIcon mobi-category-icon fa-solid fa-satellite-dish">
       <block type="sensor_dist"></block>
       <block type="sensor_line"></block>
       <block type="get_time_internet"></block>
@@ -457,7 +557,7 @@
   </xml>
 
   <xml id="toolbox_smarthome" style="display:none">
-    <category name="📡 CẢM BIẾN NHÀ" colour="#5CB1D6">
+    <category name="CẢM BIẾN NHÀ" colour="#5CB1D6" css-row="blocklyToolboxCategory mobi-category cat-sensor" css-icon="blocklyToolboxCategoryIcon mobi-category-icon fa-solid fa-house-signal">
       <block type="sh_sensor_adc_val"></block>
       <block type="sh_sensor_adc_state"></block>
       <block type="sh_dht_sensor"></block>
@@ -467,7 +567,7 @@
       <block type="sh_rfid_check"></block>
       <block type="get_time_internet"></block>
     </category>
-    <category name="📺 MÀN HÌNH LCD" colour="#9966FF">
+    <category name="MÀN HÌNH LCD" colour="#9966FF" css-row="blocklyToolboxCategory mobi-category cat-display" css-icon="blocklyToolboxCategoryIcon mobi-category-icon fa-solid fa-display">
       <block type="sh_lcd_display">
         <value name="X">
           <shadow type="math_number">
@@ -505,7 +605,7 @@
       <block type="sh_lcd_clear"></block>
       <block type="sh_lcd_backlight"></block>
     </category>
-    <category name="🔊 ÂM THANH" colour="#D65CD6">
+    <category name="ÂM THANH" colour="#D65CD6" css-row="blocklyToolboxCategory mobi-category cat-sound" css-icon="blocklyToolboxCategoryIcon mobi-category-icon fa-solid fa-volume-high">
       <block type="sh_buzzer_beep">
         <value name="TIME">
           <shadow type="math_number">
@@ -521,7 +621,7 @@
         </value>
       </block>
     </category>
-    <category name="💡 ĐÈN & QUẠT" colour="#F5B041">
+    <category name="ĐÈN & QUẠT" colour="#F5B041" css-row="blocklyToolboxCategory mobi-category cat-light" css-icon="blocklyToolboxCategoryIcon mobi-category-icon fa-solid fa-lightbulb">
       <block type="sh_led_rgb">
         <value name="R">
           <shadow type="math_number">
@@ -547,7 +647,7 @@
         </value>
       </block>
     </category>
-    <category name="🚪 ĐIỀU KHIỂN ĐIỆN" colour="#E74C3C">
+    <category name="ĐIỀU KHIỂN ĐIỆN" colour="#E74C3C" css-row="blocklyToolboxCategory mobi-category cat-electric" css-icon="blocklyToolboxCategoryIcon mobi-category-icon fa-solid fa-bolt">
       <block type="sh_relay_control"></block>
       <block type="sh_door_action"></block>
       <block type="sh_door_angle">
