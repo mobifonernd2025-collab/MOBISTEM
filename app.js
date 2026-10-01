@@ -510,8 +510,7 @@ function sendData() {
 function sendStopCommand() {
     if (!ensureActiveTarget()) return;
 
-    const payload = {};
-    payload[brokerSettings.jsonKey || 'main'] = 'print("exit")';
+    const payload = { action: 'stop' };
 
     try {
         const msg = new Paho.MQTT.Message(JSON.stringify(payload));

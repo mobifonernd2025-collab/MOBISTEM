@@ -92,12 +92,18 @@ pyGen.forBlock['main_loop'] = function (block, generator) {
     for (let i = 0; i < blocks.length; i++) {
         let type = blocks[i].type;
         if (type.startsWith('gamepad_') || type === 'motor_gamepad') hasGamepad = true;
-        if (type === 'sensor_dist' || type === 'sensor_line') hasSensor = true;
+        const isSmartHomeSensor = type.startsWith('sh_') && (
+            type.includes('sensor') || type === 'sh_rfid_read' ||
+            type === 'sh_rfid_check' || type === 'sh_lidar_dist'
+        );
+        if (type === 'sensor_dist' || type === 'sensor_line' || isSmartHomeSensor) hasSensor = true;
     }
     let code = 'while True:\n';
     if (hasGamepad) code += indent + 'game.update()\n';
     if (branch) code += branch; else if (!hasGamepad) code += indent + 'pass\n';
-    if (hasGamepad) code += indent + 'time.sleep(0.05)\n'; else if (hasSensor) code += indent + 'time.sleep(0.1)\n';
+    if (hasGamepad) code += indent + 'time.sleep(0.05)\n';
+    else if (hasSensor) code += indent + 'time.sleep(0.1)\n';
+    else code += indent + 'time.sleep(0.02)\n';
     return code;
 };
 
@@ -209,7 +215,7 @@ Blockly.Blocks['sh_sensor_adc_state'] = {
                 ["Có Lửa không?", "fire"],
                 ["Trời Sáng không?", "light"],
                 ["Có Khí Gas không?", "gas"],
-                ["Đất Ướt không?", "moisture"]
+                ["Đất Khô không?", "moisture"]
             ]), "TYPE");
         this.setOutput(true, "Number");
         this.setColour("#5CB1D6");
@@ -405,11 +411,11 @@ pyGen.forBlock['sh_pir_sensor'] = function () {
     return [`pir.motion_state`, pyGen.ORDER_ATOMIC];
 };
 pyGen.forBlock['sh_rfid_read'] = function () {
-    return [`rfid_reader.get_uid()`, pyGen.ORDER_FUNCTION_CALL];
+    return [`str(rfid_reader.get_uid())`, pyGen.ORDER_FUNCTION_CALL];
 };
 pyGen.forBlock['sh_rfid_check'] = function(block) {
-  let uid = block.getFieldValue('UID_CODE');
-  return [`(rfid_reader.get_uid() == "${uid}")`, pyGen.ORDER_ATOMIC];
+  let uid = block.getFieldValue('UID_CODE').trim();
+  return [`(str(rfid_reader.get_uid()) == ${JSON.stringify(uid)})`, pyGen.ORDER_ATOMIC];
 };
 pyGen.forBlock['sh_lidar_dist'] = function () {
     return [`lidar.get_distance()`, pyGen.ORDER_FUNCTION_CALL];
@@ -422,7 +428,7 @@ pyGen.forBlock['sh_buzzer_beep'] = function (block, generator) {
 pyGen.forBlock['sh_buzzer_tone'] = function (block, generator) {
     let note = block.getFieldValue('NOTE');
     let time = generator.valueToCode(block, 'TIME', pyGen.ORDER_ATOMIC) || '1';
-    return `Bz.play_tone('${note}', ${time})\n`;
+    return `Bz.play_tone_wait('${note}', ${time})\n`;
 };
 pyGen.forBlock['sh_fan_speed'] = function (block, generator) {
     let speed = clampCode(generator.valueToCode(block, 'SPEED', pyGen.ORDER_ATOMIC) || '0', 0, 100);
