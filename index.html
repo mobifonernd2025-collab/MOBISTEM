@@ -71,11 +71,20 @@
           <button id="fileMenuButton" class="btn-action btn-file file-menu-button" type="button"
             aria-haspopup="true" aria-expanded="false" onclick="toggleFileMenu(event)">
             <i class="fa-solid fa-folder"></i>
-            <span>Tệp tin</span>
+            <span id="fileMenuLabel">Tệp tin</span>
             <i class="fa-solid fa-chevron-down file-menu-chevron"></i>
           </button>
 
           <div id="fileMenu" class="file-menu" role="menu">
+            <button type="button" class="file-menu-item" onclick="newProject()">
+              <span class="file-menu-icon"><i class="fa-regular fa-file"></i></span>
+              <span class="file-menu-copy">
+                <strong>Dự án mới</strong>
+                <small>Thay thế workspace hiện tại</small>
+              </span>
+              <kbd>Ctrl+N</kbd>
+            </button>
+            <div class="file-menu-separator"></div>
             <button type="button" class="file-menu-item" onclick="openProject()">
               <span class="file-menu-icon"><i class="fa-regular fa-folder-open"></i></span>
               <span class="file-menu-copy">
@@ -104,19 +113,34 @@
           </div>
         </div>
 
+        <div class="ide-quick-actions" aria-label="Công cụ chỉnh sửa">
+          <button class="ide-icon-btn" type="button" title="Hoàn tác (Undo)" onclick="undoWorkspace()">
+            <i class="fa-solid fa-rotate-left"></i>
+          </button>
+          <button class="ide-icon-btn" type="button" title="Làm lại (Redo)" onclick="redoWorkspace()">
+            <i class="fa-solid fa-rotate-right"></i>
+          </button>
+          <button class="ide-icon-btn" type="button" title="Vừa khung Blockly" onclick="fitWorkspace()">
+            <i class="fa-solid fa-maximize"></i>
+          </button>
+          <button class="ide-icon-btn ide-command-btn" type="button" title="Tác vụ nhanh (Ctrl+Shift+P)" onclick="openCommandPalette()">
+            <i class="fa-solid fa-magnifying-glass"></i>
+          </button>
+        </div>
+
         <button class="btn-action btn-toggle" title="Ẩn hoặc hiện mã Python" onclick="toggleCodePanel()">
           <i class="fa-solid fa-code"></i>
           <span>Code</span>
         </button>
 
-        <button class="btn-action btn-stop" title="Dừng chương trình đang chạy" onclick="sendStopCommand()">
-          <i class="fa-solid fa-stop"></i>
+        <button class="btn-action btn-stop scratch-stop-btn" title="Dừng chương trình đang chạy" onclick="sendStopCommand()">
+          <span class="scratch-action-icon"><i class="fa-solid fa-stop"></i></span>
           <span>Dừng</span>
         </button>
 
-        <button class="btn-action btn-upload" title="Nạp chương trình xuống thiết bị" onclick="sendData()">
-          <i class="fa-solid fa-play"></i>
-          <span>Bắt đầu</span>
+        <button class="btn-action btn-upload scratch-run-btn" title="Nạp và chạy chương trình trên thiết bị" onclick="sendData()">
+          <span class="scratch-action-icon"><i class="fa-solid fa-flag"></i></span>
+          <span>Nạp &amp; chạy</span>
         </button>
 
         <button class="btn-action btn-settings" title="Cài đặt máy chủ MQTT" onclick="openAdminLogin()">
@@ -186,6 +210,113 @@
 
 
   </main>
+
+  <footer class="ide-statusbar" aria-label="Trạng thái IDE">
+    <div class="ide-status-left">
+      <span class="ide-status-item" title="Dự án hiện tại">
+        <i class="fa-regular fa-file-code"></i>
+        <span id="ideStatusProject">Dự án mới</span>
+        <span id="ideStatusDirty" class="ide-status-dirty" hidden>●</span>
+      </span>
+      <span class="ide-status-divider"></span>
+      <span class="ide-status-item" title="Thiết bị đang chọn">
+        <i class="fa-solid fa-microchip"></i>
+        <span id="ideStatusDevice">Robot</span>
+      </span>
+      <span class="ide-status-divider"></span>
+      <span class="ide-status-item" title="Trạng thái kết nối">
+        <span id="ideStatusConnectionDot" class="ide-mini-dot offline"></span>
+        <span id="ideStatusConnection">Chưa kết nối</span>
+      </span>
+    </div>
+    <div class="ide-status-right">
+      <span class="ide-status-item" title="Số khối Blockly">
+        <i class="fa-solid fa-cubes"></i>
+        <span id="ideStatusBlocks">0 khối</span>
+      </span>
+      <span class="ide-status-item" title="Số dòng Python">
+        <i class="fa-brands fa-python"></i>
+        <span id="ideStatusLines">0 dòng</span>
+      </span>
+      <button class="ide-status-command" type="button" onclick="openCommandPalette()" title="Ctrl+Shift+P">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        Tác vụ nhanh
+      </button>
+    </div>
+  </footer>
+
+  <div id="draftRecoveryBar" class="draft-recovery" hidden>
+    <div class="draft-recovery-copy">
+      <i class="fa-solid fa-clock-rotate-left"></i>
+      <div>
+        <strong>Có bản nháp chưa lưu</strong>
+        <small id="draftRecoveryText">MobiSTEM có thể khôi phục phiên làm việc trước.</small>
+      </div>
+    </div>
+    <div class="draft-recovery-actions">
+      <button type="button" class="draft-recovery-dismiss" onclick="discardRecoveryDraft()">Bỏ qua</button>
+      <button type="button" class="draft-recovery-restore" onclick="restoreRecoveryDraft()">Khôi phục</button>
+    </div>
+  </div>
+
+  <div id="commandPaletteOverlay" class="command-palette-overlay" onclick="commandPaletteBackdropClick(event)">
+    <section class="command-palette" role="dialog" aria-modal="true" aria-labelledby="commandPaletteTitle">
+      <div class="command-palette-input-wrap">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        <input id="commandPaletteInput" type="text" autocomplete="off"
+          placeholder="Tìm tác vụ... ví dụ: lưu, chạy, robot"
+          aria-label="Tìm tác vụ" oninput="renderCommandPalette(this.value)"
+          onkeydown="commandPaletteKeydown(event)" />
+        <kbd>Esc</kbd>
+      </div>
+      <div class="command-palette-head">
+        <strong id="commandPaletteTitle">Tác vụ nhanh MobiSTEM</strong>
+        <small>Ctrl+Shift+P</small>
+      </div>
+      <div id="commandPaletteList" class="command-palette-list"></div>
+    </section>
+  </div>
+
+  <div id="mobiDialogOverlay" class="mobi-dialog-overlay" onclick="mobiDialogBackdropClick(event)">
+    <form id="mobiDialogForm" class="mobi-dialog-card" onsubmit="submitMobiDialog(event)" novalidate>
+      <div class="mobi-dialog-accent"></div>
+
+      <div class="mobi-dialog-head">
+        <span id="mobiDialogIconWrap" class="mobi-dialog-icon" aria-hidden="true">
+          <i id="mobiDialogIcon" class="fa-solid fa-circle-info"></i>
+        </span>
+        <div class="mobi-dialog-heading">
+          <span id="mobiDialogEyebrow" class="mobi-dialog-eyebrow">MOBISTEM</span>
+          <h3 id="mobiDialogTitle">Thông báo</h3>
+        </div>
+        <button id="mobiDialogClose" class="mobi-dialog-close" type="button"
+          onclick="closeMobiDialog(false)" aria-label="Đóng">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <p id="mobiDialogMessage" class="mobi-dialog-message"></p>
+      <div id="mobiDialogDetails" class="mobi-dialog-details" hidden></div>
+
+      <div id="mobiDialogInputWrap" class="mobi-dialog-input-wrap" hidden>
+        <label id="mobiDialogInputLabel" for="mobiDialogInput">Tên dự án</label>
+        <div class="mobi-dialog-input-shell">
+          <i class="fa-regular fa-file-code"></i>
+          <input id="mobiDialogInput" type="text" autocomplete="off" spellcheck="false" />
+        </div>
+      </div>
+
+      <div class="mobi-dialog-actions">
+        <button id="mobiDialogCancel" class="mobi-dialog-btn secondary" type="button"
+          onclick="closeMobiDialog(false)">Quay lại</button>
+        <button id="mobiDialogConfirm" class="mobi-dialog-btn primary" type="submit">
+          Tiếp tục
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div id="mobiToastStack" class="mobi-toast-stack" role="status" aria-live="polite" aria-atomic="false"></div>
 
   <div class="device-picker-overlay" id="devicePickerOverlay">
     <div class="device-picker-modal">
