@@ -20,7 +20,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
   <link rel="stylesheet" href="style.css" />
@@ -41,26 +41,13 @@
       </div>
     </div>
 
-    <div class="device-connect-panel">
-      <button id="devicePickerButton" class="device-picker-btn" type="button" onclick="openDevicePicker()">
-        <span id="devicePickerIcon" class="device-picker-icon"><i class="fa-solid fa-robot"></i></span>
-        <span class="device-picker-copy">
-          <small>Thiết bị</small>
-          <strong id="devicePickerLabel">Robot</strong>
-        </span>
-        <i class="fa-solid fa-chevron-down device-picker-chevron"></i>
-      </button>
-
-      <div class="device-id-box">
-        <i class="fa-solid fa-fingerprint"></i>
-        <input id="deviceIdInput" type="text" maxlength="64" autocomplete="off"
-          placeholder="Nhập ID thiết bị" aria-label="ID thiết bị" />
+    <div class="scratch-project-header" title="Dự án hiện tại">
+      <span class="scratch-project-icon"><i class="fa-solid fa-file-code"></i></span>
+      <div class="scratch-project-copy">
+        <small>DỰ ÁN</small>
+        <strong id="scratchHeaderProject">Dự án mới</strong>
       </div>
-
-      <button id="deviceConnectBtn" class="device-connect-btn" type="button" onclick="connectSelectedDevice()">
-        <i id="deviceConnectBtnIcon" class="fa-solid fa-link"></i>
-        <span id="deviceConnectBtnText">Kết nối thiết bị</span>
-      </button>
+      <span id="scratchHeaderDirty" class="scratch-project-dirty" hidden>●</span>
     </div>
 
     <div class="topbar-right">
@@ -173,13 +160,27 @@
   <main class="main-shell">
     <section id="tab-blockly" class="tab-content active">
       <div class="workspace-shell">
-        <div class="panel-titlebar">
-          <div class="panel-title-left">
+        <div class="panel-titlebar scratch-editor-bar">
+          <div class="scratch-editor-tabs" role="tablist" aria-label="Chế độ lập trình">
+            <button id="scratchBlocksTab" class="scratch-editor-tab active" type="button"
+              role="tab" aria-selected="true" onclick="setScratchEditorMode('blocks')">
+              <i class="fa-solid fa-puzzle-piece"></i>
+              <span>Khối lệnh</span>
+            </button>
+            <button id="scratchPythonTab" class="scratch-editor-tab" type="button"
+              role="tab" aria-selected="false" onclick="setScratchEditorMode('python')">
+              <i class="fa-brands fa-python"></i>
+              <span>Python</span>
+            </button>
+          </div>
+
+          <div class="scratch-editor-context">
             <div class="panel-title-copy">
               <h3 id="workspaceTitle">Lập trình Robot</h3>
               <p id="workspaceSubtitle">Kéo thả khối lệnh dành riêng cho Robot</p>
             </div>
           </div>
+
           <div class="panel-badge">
             <span class="panel-badge-dot"></span>
             <span id="workspaceBadgeText">Robot Workspace</span>
@@ -208,7 +209,86 @@
       </div>
     </section>
 
+    <aside class="scratch-stage-panel" aria-label="Thiết bị">
+      <div class="scratch-stage-head">
+        <div class="scratch-stage-title">
+          <span class="scratch-stage-icon"><i id="scratchDeviceIcon" class="fa-solid fa-robot"></i></span>
+          <div>
+            <small>THIẾT BỊ</small>
+            <strong id="scratchDeviceName">Robot</strong>
+          </div>
+        </div>
+        <div class="scratch-stage-head-actions">
+          <button class="scratch-stage-head-run" type="button" onclick="sendData()" title="Nạp & chạy">
+            <i class="fa-solid fa-flag"></i>
+          </button>
+          <button class="scratch-stage-head-stop" type="button" onclick="sendStopCommand()" title="Dừng">
+            <i class="fa-solid fa-stop"></i>
+          </button>
+        </div>
+      </div>
 
+      <div class="device-connect-panel scratch-device-connect-panel">
+        <button id="devicePickerButton" class="device-picker-btn" type="button" onclick="openDevicePicker()">
+          <span id="devicePickerIcon" class="device-picker-icon"><i class="fa-solid fa-robot"></i></span>
+          <span class="device-picker-copy">
+            <small>Loại thiết bị</small>
+            <strong id="devicePickerLabel">Robot</strong>
+          </span>
+          <i class="fa-solid fa-chevron-down device-picker-chevron"></i>
+        </button>
+
+        <div class="device-id-box">
+          <i class="fa-solid fa-fingerprint"></i>
+          <input id="deviceIdInput" type="text" maxlength="64" autocomplete="off"
+            placeholder="ID thiết bị" aria-label="ID thiết bị" />
+        </div>
+
+        <button id="deviceConnectBtn" class="device-connect-btn" type="button" onclick="connectSelectedDevice()">
+          <i id="deviceConnectBtnIcon" class="fa-solid fa-link"></i>
+          <span id="deviceConnectBtnText">Kết nối</span>
+        </button>
+      </div>
+
+      <div class="scratch-device-preview">
+        <div class="scratch-device-art">
+          <div class="scratch-device-halo"></div>
+          <i id="scratchDeviceHeroIcon" class="fa-solid fa-robot"></i>
+        </div>
+
+        <div class="scratch-device-id-line">
+          <span>ID</span>
+          <strong id="scratchDeviceId">Chưa nhập</strong>
+        </div>
+
+        <div id="scratchDeviceState" class="scratch-device-state offline">
+          <span class="scratch-device-state-dot"></span>
+          <strong>Chưa kết nối</strong>
+        </div>
+      </div>
+
+      <div class="scratch-stage-section">
+        <div class="scratch-stage-section-title">
+          <span><i class="fa-solid fa-bolt"></i> Trạng thái</span>
+          <button type="button" onclick="openDevicePicker()" title="Đổi thiết bị">
+            <i class="fa-solid fa-pen"></i>
+          </button>
+        </div>
+        <div class="scratch-stage-info-row">
+          <span>Workspace</span>
+          <strong id="scratchWorkspaceName">Robot</strong>
+        </div>
+        <div class="scratch-stage-info-row">
+          <span>Kết nối</span>
+          <strong id="scratchConnectionText">Chưa kết nối</strong>
+        </div>
+        <div class="scratch-stage-info-row">
+          <span>Khối lệnh</span>
+          <strong id="scratchBlockCount">0</strong>
+        </div>
+      </div>
+
+    </aside>
   </main>
 
   <footer class="ide-statusbar" aria-label="Trạng thái IDE">

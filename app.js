@@ -492,6 +492,11 @@ function updateProjectUi() {
         button.title = projectDisplayName() + (projectDirty ? ' · Chưa lưu' : '');
     }
 
+    const headerProject = document.getElementById('scratchHeaderProject');
+    const headerDirty = document.getElementById('scratchHeaderDirty');
+    if (headerProject) headerProject.textContent = projectDisplayName();
+    if (headerDirty) headerDirty.hidden = !projectDirty;
+
     document.title = (projectDirty ? '* ' : '') + baseDocumentTitle;
     updateIdeStatusBar();
 }
@@ -507,18 +512,48 @@ function updateIdeStatusBar() {
     const device = document.getElementById('ideStatusDevice');
     const connection = document.getElementById('ideStatusConnection');
     const connectionDot = document.getElementById('ideStatusConnectionDot');
+    const selected = getDeviceDefinition();
+    const id = document.getElementById('deviceIdInput')?.value.trim() || '';
 
     if (project) project.textContent = projectDisplayName();
     if (dirty) dirty.hidden = !projectDirty;
 
     if (device) {
-        const selected = getDeviceDefinition();
-        const id = document.getElementById('deviceIdInput')?.value.trim();
         device.textContent = selected.name + (id ? ' · ' + id : '');
     }
 
     if (connection) connection.textContent = lastConnectionText;
     if (connectionDot) connectionDot.className = 'ide-mini-dot ' + lastConnectionState;
+
+    const scratchName = document.getElementById('scratchDeviceName');
+    const scratchId = document.getElementById('scratchDeviceId');
+    const scratchWorkspace = document.getElementById('scratchWorkspaceName');
+    const scratchConnection = document.getElementById('scratchConnectionText');
+    const scratchIcon = document.getElementById('scratchDeviceIcon');
+    const scratchHeroIcon = document.getElementById('scratchDeviceHeroIcon');
+    const scratchDot = document.getElementById('scratchDeviceDot');
+    const scratchState = document.getElementById('scratchDeviceState');
+
+    if (scratchName) scratchName.textContent = selected.name;
+    if (scratchId) scratchId.textContent = id || 'Chưa nhập';
+    if (scratchWorkspace) scratchWorkspace.textContent = selected.name;
+    if (scratchConnection) scratchConnection.textContent = lastConnectionText;
+    if (scratchIcon) scratchIcon.className = selected.icon;
+    if (scratchHeroIcon) scratchHeroIcon.className = selected.icon;
+    if (scratchDot) scratchDot.className = 'scratch-stage-dot ' + lastConnectionState;
+    if (scratchState) {
+        scratchState.className = 'scratch-device-state ' + lastConnectionState;
+        const stateText = scratchState.querySelector('strong');
+        if (stateText) {
+            const labels = {
+                online: 'Đã kết nối',
+                connecting: 'Đang kết nối...',
+                error: 'Lỗi kết nối',
+                offline: 'Chưa kết nối'
+            };
+            stateText.textContent = labels[lastConnectionState] || lastConnectionText;
+        }
+    }
 }
 
 function updateWorkspaceStats(code = null) {
@@ -528,8 +563,10 @@ function updateWorkspaceStats(code = null) {
 
     const blocks = document.getElementById('ideStatusBlocks');
     const lines = document.getElementById('ideStatusLines');
+    const scratchBlocks = document.getElementById('scratchBlockCount');
     if (blocks) blocks.textContent = blockCount + ' khối';
     if (lines) lines.textContent = lineCount + ' dòng';
+    if (scratchBlocks) scratchBlocks.textContent = String(blockCount);
 }
 
 function undoWorkspace() {
@@ -823,6 +860,62 @@ function commandPaletteKeydown(event) {
     }
 }
 
+function polishToolboxLabels() {
+    const labels = {
+        'LOGIC': 'Logic',
+        'VONG LAP': 'Vòng lặp',
+        'TOAN HOC': 'Toán học',
+        'VAN BAN': 'Văn bản',
+        'BIEN': 'Biến',
+        'HAM': 'Hàm',
+        'TAY CAM': 'Tay cầm',
+        'DONG CO': 'Động cơ',
+        'TAY GAP': 'Tay gắp',
+        'HIEN THI': 'Hiển thị',
+        'AM THANH': 'Âm thanh',
+        'CAM BIEN': 'Cảm biến',
+        'CAM BIEN NHA': 'Cảm biến nhà',
+        'MAN HINH LCD': 'Màn hình LCD',
+        'DEN & QUAT': 'Đèn & quạt',
+        'DIEU KHIEN DIEN': 'Điều khiển điện'
+    };
+
+    document.querySelectorAll('.mobi-category .blocklyToolboxCategoryLabel').forEach(label => {
+        const key = String(label.textContent || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/Đ/g, 'D')
+            .replace(/đ/g, 'd')
+            .trim()
+            .toUpperCase();
+        if (labels[key]) label.textContent = labels[key];
+    });
+}
+
+function openFirstToolboxCategory() {
+    window.setTimeout(() => {
+        try {
+            polishToolboxLabels();
+            const toolbox = workspace.getToolbox?.();
+            if (!toolbox) return;
+
+            const selected = toolbox.getSelectedItem?.();
+            if (selected) return;
+
+            const items = toolbox.getToolboxItems?.() || [];
+            const first = items.find(item =>
+                typeof item?.isSelectable === 'function' && item.isSelectable()
+            );
+
+            if (first && typeof toolbox.setSelectedItem === 'function') {
+                toolbox.setSelectedItem(first);
+            }
+        } catch (error) {
+            console.warn('Không thể mở danh mục Blockly mặc định:', error);
+        }
+    }, 100);
+}
+
 function clearWorkspaceForNewSession() {
     suppressWorkspaceEvents = true;
     try {
@@ -833,6 +926,7 @@ function clearWorkspaceForNewSession() {
     }
     workspaceSnapshots[currentDeviceKey] = '';
     refreshGeneratedCode();
+    openFirstToolboxCategory();
     setTimeout(() => Blockly.svgResize(workspace), 50);
 }
 
@@ -879,6 +973,7 @@ function restoreWorkspace(deviceKey) {
     }
 
     refreshGeneratedCode();
+    openFirstToolboxCategory();
     setTimeout(() => {
         Blockly.svgResize(workspace);
     }, 60);
@@ -1469,6 +1564,7 @@ window.onload = function () {
     refreshGeneratedCode();
     updateProjectUi();
     updateIdeStatusBar();
+    openFirstToolboxCategory();
     showRecoveryDraftIfAvailable();
 };
 
@@ -1484,12 +1580,34 @@ document.addEventListener('visibilitychange', () => {
 // GIAO DIỆN
 // =========================================================
 
-function toggleCodePanel() {
-    document.getElementById('tab-blockly').classList.toggle('show-code');
+function setScratchEditorMode(mode = 'blocks') {
+    const shell = document.getElementById('tab-blockly');
+    const blocksTab = document.getElementById('scratchBlocksTab');
+    const pythonTab = document.getElementById('scratchPythonTab');
+    if (!shell) return;
+
+    const pythonMode = mode === 'python';
+    shell.classList.toggle('scratch-python-mode', pythonMode);
+    shell.classList.remove('show-code');
+
+    if (blocksTab) {
+        blocksTab.classList.toggle('active', !pythonMode);
+        blocksTab.setAttribute('aria-selected', String(!pythonMode));
+    }
+    if (pythonTab) {
+        pythonTab.classList.toggle('active', pythonMode);
+        pythonTab.setAttribute('aria-selected', String(pythonMode));
+    }
+
     setTimeout(() => {
         Blockly.svgResize(workspace);
         if (codeEditor) codeEditor.refresh();
-    }, 300);
+    }, 80);
+}
+
+function toggleCodePanel() {
+    const shell = document.getElementById('tab-blockly');
+    setScratchEditorMode(shell?.classList.contains('scratch-python-mode') ? 'blocks' : 'python');
 }
 
 function togglePassword() {
